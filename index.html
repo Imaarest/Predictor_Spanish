@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PREDICTOR DE IA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+    <style>
+      body {
+        font-family: "Share Tech Mono", monospace;
+        text-shadow: 0 0 3px rgba(57, 255, 20, 0.4);
+        background-color: #000;
+        overflow-x: hidden;
+      }
+      .cursor::after { content: "_"; animation: blink 1s step-end infinite; }
+      @keyframes blink { 50% { opacity: 0; } }
+      .hacker-input:focus { box-shadow: 0 0 15px rgba(57, 255, 20, 0.6); }
+      .blinking-red { color: #ef4444; animation: blink-red 1.5s step-end infinite; }
+      @keyframes blink-red { 50% { opacity: 0.5; } }
+      .shake { animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+      @keyframes shake {
+        10%, 90% { transform: translate3d(-1px, 0, 0); }
+        20%, 80% { transform: translate3d(2px, 0, 0); }
+        30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+        40%, 60% { transform: translate3d(4px, 0, 0); }
+      }
+      .signal-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+      .signal-card:hover:not(.locked-card) { transform: translateY(-5px); box-shadow: 0 0 25px rgba(57, 255, 20, 0.5); }
+      #chat-widget { transition: all 0.3s ease-in-out; }
+      #chat-messages::-webkit-scrollbar { width: 4px; }
+      #chat-messages::-webkit-scrollbar-track { background: #1a1a1a; }
+      #chat-messages::-webkit-scrollbar-thumb { background: #00ff00; }
+      #live-feed-container {
+        mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+        -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+      }
+      .winner-item { animation: slideInFromLeft 0.5s ease-out forwards; }
+      @keyframes slideInFromLeft {
+        from { opacity: 0; transform: translateX(-30px); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+      .btn-disabled { background-color: #4a5568 !important; cursor: not-allowed !important; color: #a0aec0 !important; }
+      .multiplier-rising { text-shadow: 0 0 20px rgba(255, 255, 255, 0.8); color: #63b3ed; }
+      .multiplier-final { color: #48bb78; text-shadow: 0 0 20px rgba(72, 187, 120, 0.8); }
+      .custom-select-options { animation: fadeIn 0.2s ease-out; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+      .mine-cell { background-color: #1a202c; border-radius: 0.375rem; transition: all 0.3s ease-in-out; cursor: default; }
+      .mine-cell.safe {
+        background-image: url("https://www.freeiconspng.com/uploads/yellow-christmas-star-png-18.png");
+        background-size: 70%; background-position: center; background-repeat: no-repeat;
+        background-color: #38a169; transform: scale(1.05); box-shadow: 0 0 15px rgba(56, 161, 105, 0.7);
+      }
+      .game-console { background-color: #0d1117; border-color: #30363d; height: 8rem; }
+      .game-console p { animation: fadeInConsole 0.3s ease-in; color: #a5d6ff; }
+      .game-console p.success { color: #56d364; }
+      .game-console p.error { color: #f85149; }
+      @keyframes fadeInConsole { from { opacity: 0; } to { opacity: 1; } }
+      .penalty-gate-post { background-color: #a0aec0; }
+      .penalty-target-zone { background-color: rgba(255, 255, 255, 0.1); border: 2px dashed rgba(255, 255, 255, 0.2); transition: all 0.3s ease-in-out; }
+      .penalty-target-zone.highlight { background-color: rgba(56, 161, 105, 0.8); border-color: #f6e05e; box-shadow: 0 0 25px rgba(56, 161, 105, 0.9); }
+      .number-signal-display { color: #48bb78; text-shadow: 0 0 20px rgba(72, 187, 120, 0.8); }
+      #chicken-road-viewport { overflow: hidden; background: linear-gradient(to bottom, #1a202c, #2d3748); }
+      #chicken-road-track { transition: transform 0.2s linear; }
+      .chicken-stove { background-color: #4a5568; border: 2px solid #718096; box-shadow: 0 4px 0 #2d3748; }
+      #chicken-icon { transition: transform 0.2s ease-out; z-index: 10; }
+      .locked-card { cursor: not-allowed; pointer-events: none; }
+      .admin-input { background-color: #1a202c; border: 1px solid #4a5568; color: #a0aec0; transition: all 0.3s ease; }
+      .admin-input:focus { outline: none; border-color: #38a169; box-shadow: 0 0 10px rgba(56, 161, 105, 0.5); }
+    </style>
+  </head>
+  <body class="bg-black text-green-400">
+    <div id="main-content" class="min-h-screen flex flex-col items-center justify-center p-4">
+      <header class="text-center mb-12">
+        <h1 class="text-3xl md:text-5xl tracking-widest cursor-default">
+          <span id="typing-text">PREDICTOR DE IA</span><span class="cursor"></span>
+        </h1>
+      </header>
+      <button id="openModalBtn" class="bg-transparent border-2 border-green-400 text-green-400 px-8 py-3 text-lg hover:bg-green-400 hover:text-black transition-all duration-300 active:scale-95 shadow-lg shadow-green-500/20 hover:shadow-green-500/40">
+        OBTENER SEÑALES DE IA
+      </button>
+    </div>
+
+    <div id="app-container" class="hidden min-h-screen container mx-auto p-4 md:p-8">
+      <div class="w-full bg-gray-900 border border-green-700/50 rounded p-2 mb-4 flex justify-between items-center text-[10px] sm:text-xs font-mono shadow-[0_0_15px_rgba(57,255,20,0.1)]">
+        <div class="flex items-center gap-1 sm:gap-2"><span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500 animate-pulse"></span> <span class="hidden sm:inline">API:</span> SEGURA</div>
+        <div class="text-yellow-500 font-bold tracking-widest"><i class="fas fa-fire mr-1 text-orange-500"></i>RACHA: <span id="global-streak">0</span> VICTORIAS</div>
+        <div class="flex items-center gap-1 sm:gap-2">PING: <span id="ping-value" class="text-green-400">12</span>ms</div>
+      </div>
+      <div class="w-full flex justify-end items-center gap-4 mb-4">
+        <button id="admin-panel-btn" class="hidden bg-yellow-600 text-white px-4 py-2 text-sm rounded-md hover:bg-yellow-500 transition-colors active:scale-95">
+          <i class="fas fa-user-shield mr-2"></i>Panel de Admin
+        </button>
+        <button id="logoutBtn" class="bg-red-600 text-white px-4 py-2 text-sm rounded-md hover:bg-red-500 transition-colors active:scale-95">
+          <i class="fas fa-sign-out-alt mr-2"></i>Cerrar sesión
+        </button>
+      </div>
+
+      <div id="live-feed-section" class="mb-8">
+        <h3 class="text-center text-xl mb-4 tracking-widest">// MEJORES GANADORES AHORA //</h3>
+        <div id="live-feed-container" class="h-24 bg-black/30 border border-green-800 rounded-md p-2 flex items-center space-x-4 overflow-x-hidden"></div>
+      </div>
+
+      <div id="signals-section" class="">
+        <h2 class="text-3xl md:text-4xl text-center mb-10 tracking-widest">// SEÑALES DE IA DISPONIBLES //</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+          <div class="signal-card bg-[#0d0d0d] border border-green-700 rounded-lg overflow-hidden flex flex-col" data-game="aviator">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQqBdX8SuaC1Ws7ZYuCVQstQ4qRi9A_3SWujg&s" alt="Aviator" class="w-full h-48 object-cover"/>
+            <div class="p-4 flex flex-col flex-grow text-center">
+              <h3 class="text-lg font-bold mb-2 flex-grow">Predictor de Aviator</h3>
+              <p id="stats-aviator" class="text-sm text-gray-400 mb-3 font-mono leading-tight">// Cargando...</p>
+              <button class="activate-btn w-full mt-auto bg-green-600 text-black px-4 py-2 hover:bg-green-500 transition-all duration-300">ACTIVAR</button>
+            </div>
+          </div>
+          <div class="signal-card bg-[#0d0d0d] border border-green-700 rounded-lg overflow-hidden flex flex-col" data-game="mines">
+            <img src="https://rotativka.com/en/wp-content/uploads/sites/3/2021/06/Mines-Demo.jpg" alt="Mines" class="w-full h-48 object-cover"/>
+            <div class="p-4 flex flex-col flex-grow text-center">
+              <h3 class="text-lg font-bold mb-2 flex-grow">Predictor de Mines</h3>
+              <p id="stats-mines" class="text-sm text-gray-400 mb-3 font-mono leading-tight">// Cargando...</p>
+              <button class="activate-btn w-full mt-auto bg-green-600 text-black px-4 py-2 hover:bg-green-500 transition-all duration-300">ACTIVAR</button>
+            </div>
+          </div>
+          <div class="signal-card bg-[#0d0d0d] border border-green-700 rounded-lg overflow-hidden flex flex-col" data-game="penalty">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcThYP5CGxc52hWd4ToMHI8MIJhun5BEjHh5LQ&s" alt="Penalty" class="w-full h-48 object-cover"/>
+            <div class="p-4 flex flex-col flex-grow text-center">
+              <h3 class="text-lg font-bold mb-2 flex-grow">Predictor de Penalty</h3>
+              <p id="stats-penalty" class="text-sm text-gray-400 mb-3 font-mono leading-tight">// Cargando...</p>
+              <button class="activate-btn w-full mt-auto bg-green-600 text-black px-4 py-2 hover:bg-green-500 transition-all duration-300">ACTIVAR</button>
+            </div>
+          </div>
+          <div class="signal-card bg-[#0d0d0d] border border-green-700 rounded-lg overflow-hidden flex flex-col" data-game="apple">
+            <img src="https://play-lh.googleusercontent.com/ezAY-TvV3PlhYWLs8k8czRjWWSdBwFtPrw72fNpS8p6wByC0xBG-Dgt0K5ojieZXrg" alt="Apple" class="w-full h-48 object-cover"/>
+            <div class="p-4 flex flex-col flex-grow text-center">
+              <h3 class="text-lg font-bold mb-2 flex-grow">Predictor de Apple</h3>
+              <p id="stats-apple" class="text-sm text-gray-400 mb-3 font-mono leading-tight">// Cargando...</p>
+              <button class="activate-btn w-full mt-auto bg-green-600 text-black px-4 py-2 hover:bg-green-500 transition-all duration-300">ACTIVAR</button>
+            </div>
+          </div>
+          <div class="signal-card bg-[#0d0d0d] border border-green-700 rounded-lg overflow-hidden flex flex-col" data-game="chicken">
+            <img src="https://cdn6.aptoide.com/imgs/1/0/2/1023a04c18a7a91673200703af12a58f_icon.png" alt="Chicken" class="w-full h-48 object-cover"/>
+            <div class="p-4 flex flex-col flex-grow text-center">
+              <h3 class="text-lg font-bold mb-2 flex-grow">Predictor de Chicken</h3>
+              <p id="stats-chicken" class="text-sm text-gray-400 mb-3 font-mono leading-tight">// Cargando...</p>
+              <button class="activate-btn w-full mt-auto bg-green-600 text-black px-4 py-2 hover:bg-green-500 transition-all duration-300">ACTIVAR</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="game-view" class="hidden">
+        <!-- AVIATOR -->
+        <div id="game-screen-aviator" class="game-screen hidden relative min-h-[60vh] flex flex-col items-center justify-center bg-black/30 border border-green-800 rounded-md p-4 pt-16 pb-8">
+          <button class="back-to-signals-btn absolute top-4 right-4 text-gray-400 hover:text-white transition-colors text-4xl leading-none">&times;</button>
+          <h3 class="game-title text-3xl sm:text-4xl text-center mb-4">PREDICTOR DE IA AVIATOR</h3>
+          <div class="mb-2 py-4"><p id="aviator-multiplier" class="text-7xl md:text-9xl font-mono text-center text-white transition-colors duration-500">x1.00</p></div>
+          <p id="aviator-bet-suggestion" class="text-center text-yellow-400 h-8 my-4 text-sm sm:text-xl font-bold"></p>
+          <button id="aviator-get-signal-btn" class="w-full max-w-md bg-green-600 text-black hover:bg-green-500 px-6 py-3 text-lg transition-all duration-300 active:scale-95 rounded-md">Obtener Señal</button>
+          <button id="aviator-get-another-btn" class="hidden w-full max-w-md bg-yellow-500 text-black px-6 py-3 text-lg hover:bg-yellow-400 transition-all duration-300 active:scale-95 rounded-md mt-4">OBTENER OTRA</button>
+          <div id="aviator-console" class="game-console w-full max-w-md border rounded-md mt-6 p-2 font-mono text-xs overflow-y-auto"><div></div></div>
+        </div>
+
+        <!-- MINES -->
+        <div id="game-screen-mines" class="game-screen hidden relative min-h-[60vh] flex flex-col items-center justify-center bg-black/30 border border-green-800 rounded-md p-4 pt-16 pb-8">
+          <button class="back-to-signals-btn absolute top-4 right-4 text-gray-400 hover:text-white transition-colors text-4xl leading-none">&times;</button>
+          <h3 class="game-title text-3xl sm:text-4xl text-center mb-6">PREDICTOR DE IA MINES</h3>
+          <div class="flex flex-col sm:flex-row gap-6 mb-6 w-full max-w-lg">
+            <div class="relative flex-1" data-select-id="grid-size">
+              <label class="block text-sm text-gray-400 mb-1">Tamaño de Cuadrícula</label>
+              <button class="custom-select-trigger w-full bg-gray-900 border border-green-700 rounded p-3 flex justify-between"><span class="selected-option">5x5</span></button>
+              <div class="custom-select-options hidden absolute top-full mt-1 bg-gray-900 border border-green-700 rounded-md z-10 overflow-hidden w-full">
+                <div class="p-2 cursor-pointer hover:bg-green-800">5x5</div>
+              </div>
+            </div>
+            <div class="relative flex-1" data-select-id="mine-count">
+              <label class="block text-sm text-gray-400 mb-1">Número de Minas</label>
+              <button class="custom-select-trigger w-full bg-gray-900 border border-green-700 rounded p-3 flex justify-between"><span class="selected-option">3</span></button>
+              <div class="custom-select-options hidden absolute top-full mt-1 bg-gray-900 border border-green-700 rounded-md z-10 w-full">
+                <div class="p-2 cursor-pointer hover:bg-green-800">3</div>
+              </div>
+            </div>
+          </div>
+          <div id="mines-grid-container" class="w-full max-w-md aspect-square mb-6"></div>
+          <p id="mines-bet-suggestion" class="text-center text-yellow-400 h-8 my-4 text-sm sm:text-xl font-bold"></p>
+          <button id="mines-get-signal-btn" class="w-full max-w-md bg-green-600 text-black hover:bg-green-500 px-6 py-3 text-lg transition-all duration-300 rounded-md">Obtener Señal</button>
+          <button id="mines-get-another-btn" class="hidden w-full max-w-md bg-yellow-500 text-black px-6 py-3 mt-4 text-lg rounded-md">OBTENER OTRA</button>
+          <div id="mines-console" class="game-console w-full max-w-md border rounded-md mt-6 p-2 font-mono text-xs overflow-y-auto"><div></div></div>
+        </div>
+
+        <!-- PENALTY -->
+        <div id="game-screen-penalty" class="game-screen hidden relative min-h-[60vh] flex flex-col items-center justify-center bg-black/30 border border-green-800 rounded-md p-4 pt-16 pb-8">
+          <button class="back-to-signals-btn absolute top-4 right-4 text-gray-400 hover:text-white transition-colors text-4xl leading-none">&times;</button>
+          <h3 class="game-title text-3xl sm:text-4xl text-center mb-6">PREDICTOR DE PENALTY</h3>
+          <div class="relative w-full max-w-lg h-64 md:h-80 bg-gray-900/20 border-2 border-gray-600 mb-6">
+            <div data-zone="1" class="penalty-target-zone absolute top-4 left-4 w-16 h-16 rounded-full"></div>
+            <div data-zone="2" class="penalty-target-zone absolute top-4 right-4 w-16 h-16 rounded-full"></div>
+            <div data-zone="3" class="penalty-target-zone absolute top-4 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full"></div>
+            <div data-zone="4" class="penalty-target-zone absolute bottom-4 left-4 w-16 h-16 rounded-full"></div>
+            <div data-zone="5" class="penalty-target-zone absolute bottom-4 right-4 w-16 h-16 rounded-full"></div>
+          </div>
+          <p id="penalty-bet-suggestion" class="text-center text-yellow-400 h-8 my-4 text-sm font-bold"></p>
+          <button id="penalty-get-signal-btn" class="w-full max-w-md bg-green-600 text-black hover:bg-green-500 px-6 py-3 rounded-md">Obtener Señal</button>
+          <button id="penalty-start-new-game-btn" class="hidden w-full max-w-md bg-yellow-500 text-black px-6 py-3 mt-4 rounded-md">Siguiente</button>
+          <div id="penalty-console" class="game-console w-full max-w-md border rounded-md mt-6 p-2 font-mono text-xs overflow-y-auto"><div></div></div>
+        </div>
+
+        <!-- APPLE -->
+        <div id="game-screen-apple" class="game-screen hidden relative min-h-[60vh] flex flex-col items-center justify-center bg-black/30 border border-green-800 rounded-md p-4">
+          <button class="back-to-signals-btn absolute top-4 right-4 text-gray-400 hover:text-white transition-colors text-4xl leading-none">&times;</button>
+          <h3 class="game-title text-3xl mb-4 mt-8">PREDICTOR DE APPLE</h3>
+          <div class="flex-grow flex items-center justify-center my-6"><p id="apple-signal-display" class="text-9xl font-mono text-white">#</p></div>
+          <p id="apple-bet-suggestion" class="text-center text-yellow-400 h-8 font-bold mb-4"></p>
+          <button id="apple-get-signal-btn" class="w-full max-w-md bg-green-600 text-black py-3 rounded-md">Obtener Señal</button>
+          <button id="apple-start-new-game-btn" class="hidden w-full max-w-md bg-yellow-500 py-3 mt-4 rounded-md">Siguiente</button>
+          <div id="apple-console" class="game-console w-full max-w-md border mt-6 p-2 overflow-y-auto"><div></div></div>
+        </div>
+
+        <!-- CHICKEN -->
+        <div id="game-screen-chicken" class="game-screen hidden relative min-h-[60vh] flex flex-col items-center justify-center bg-black/30 border border-green-800 rounded-md p-4">
+          <button class="back-to-signals-btn absolute top-4 right-4 text-gray-400 hover:text-white transition-colors text-4xl leading-none">&times;</button>
+          <h3 class="game-title text-3xl mb-4 mt-8">ESTRATEGIA CHICKEN</h3>
+          <div id="chicken-road-viewport" class="w-full h-24 relative rounded-md border-y-4 border-gray-500 mb-4 max-w-md mx-auto">
+            <div id="chicken-road-track" class="h-full relative flex items-center"></div>
+            <img id="chicken-icon" src="https://iili.io/FvIoXhg.webp" class="absolute h-16 w-16 top-1/2" alt="Chicken"/>
+          </div>
+          <p id="chicken-bet-suggestion" class="text-center text-yellow-400 h-8 font-bold mb-4"></p>
+          <button id="chicken-get-signal-btn" class="w-full max-w-md bg-green-600 text-black py-3 rounded-md">Obtener Señal</button>
+          <button id="chicken-get-another-btn" class="hidden w-full max-w-md bg-yellow-500 py-3 mt-4 rounded-md">Siguiente</button>
+          <div id="chicken-console" class="game-console w-full max-w-md border mt-6 p-2 overflow-y-auto"><div></div></div>
+        </div>
+      </div>
+
+      <div id="admin-panel" class="hidden mt-12 mb-8 text-white">...</div>
+    </div>
+
+    <!-- Modals -->
+    <div id="accessModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+      <div id="modalContainer" class="bg-[#0d0d0d] border border-green-500 rounded-lg p-6 w-full max-w-sm text-center">
+        <div id="formContent">
+          <p class="blinking-red text-sm mb-4">// Ingresar código diario //</p>
+          <input type="text" id="accessCode" class="hacker-input w-full bg-gray-900 border border-green-600 text-green-300 rounded p-3 text-center mb-2" placeholder="Código de acceso"/>
+          <p id="errorMessage" class="text-red-500 h-5 mt-2 text-sm"></p>
+          <button id="validateBtn" class="mt-4 w-full bg-green-600 text-black py-2 hover:bg-green-500">VALIDAR</button>
+        </div>
+        <div id="statusContent" class="hidden h-36 flex items-center justify-center"><p id="statusText" class="text-2xl animate-pulse"></p></div>
+      </div>
+    </div>
+
+    <div id="scanningOverlay" class="fixed inset-0 bg-black/95 backdrop-blur-sm z-[60] hidden flex flex-col items-center justify-center font-mono">
+      <div class="text-green-500 text-6xl mb-6"><i class="fas fa-satellite-dish animate-pulse"></i></div>
+      <h2 class="text-xl sm:text-2xl text-green-400 mb-2 tracking-widest text-center">// INTERCEPTANDO LA API DE 1XBET //</h2>
+      <div class="w-64 h-4 border border-green-500 p-0.5 mb-4 relative drop-shadow-[0_0_8px_rgba(57,255,20,0.8)]">
+          <div id="scanProgressBar" class="h-full bg-green-500 w-0 transition-all duration-100"></div>
+      </div>
+      <p id="scanStatus" class="text-sm text-gray-400 text-center">Eludiendo cortafuegos...</p>
+    </div>
+
+    <div id="depositModal" class="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-4 hidden">
+      <div class="bg-[#0d0d0d] border border-red-500 rounded-lg p-6 md:p-8 w-full max-w-md relative shadow-[0_0_30px_rgba(239,68,68,0.3)] text-center">
+        <button id="closeDepositModalBtn" class="absolute top-2 right-3 text-gray-500 hover:text-red-400 text-4xl leading-none transition-colors">&times;</button>
+        <div class="blinking-red text-5xl mb-4"><i class="fas fa-exclamation-triangle"></i></div>
+        <h2 class="text-2xl text-red-500 mb-4 font-bold tracking-widest">// SINCRONIZACIÓN DE API PERDIDA //</h2>
+        <p class="text-gray-300 mb-6 text-sm">
+          Para mantener la sincronización de IA y continuar recibiendo señales con +98% de precisión para <span class="text-white font-bold">1xBet</span>, se requiere un nuevo depósito en su cuenta existente para actualizar los tokens de sesión.
+        </p>
+        <a href="https://indi-1xbet.com/en/office/recharge" target="_blank" class="block w-full bg-blue-600 text-white font-bold px-6 py-4 rounded hover:bg-blue-500 transition-all active:scale-95 mb-6 shadow-[0_0_15px_rgba(37,99,235,0.5)]">
+          <i class="fas fa-coins mr-2"></i> DEPOSITAR EN 1XBET
+        </a>
+        <div class="border-t border-gray-800 pt-6">
+          <label class="block text-sm text-gray-400 mb-2">Envíe un mensaje al Administrador para obtener el Código de Acceso tras el depósito:</label>
+          <input type="text" id="txIdInput" class="hacker-input w-full bg-gray-900 border border-gray-700 text-green-300 rounded p-3 text-center focus:outline-none mb-3" placeholder="Ingresar Código de Acceso">
+          <button id="verifyDepositBtn" class="w-full bg-green-700 text-black font-bold px-6 py-3 hover:bg-green-600 transition-all active:scale-95 rounded">
+            VERIFICAR CÓDIGO DE ACCESO
+          </button>
+          <p id="depositStatus" class="font-mono text-sm mt-3 h-4"></p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const mainContent = document.getElementById("main-content");
+      const appContainer = document.getElementById("app-container");
+      const signalsSection = document.getElementById("signals-section");
+      const gameView = document.getElementById("game-view");
+      
+      let globalSignalCount = parseInt(localStorage.getItem('ai_global_signal_count')) || 0;
+      let currentStreak = parseInt(localStorage.getItem('ai_current_streak')) || 0;
+      const MAX_FREE_SIGNALS = 10; // Prompts deposit after 10 tokens used
+
+      // Ping & Streak Update Logic
+      setInterval(() => {
+          const pingEl = document.getElementById("ping-value");
+          if(pingEl) pingEl.innerText = Math.floor(Math.random() * 15 + 8);
+      }, 2000);
+      const updateStreak = () => {
+          const streakEl = document.getElementById('global-streak');
+          if(streakEl) streakEl.innerText = currentStreak;
+      };
+      updateStreak();
+
+      // Countdown Timer Logic
+      let activeTimerInterval;
+      function showSignalWithTimer(elementId, mainText) {
+          clearInterval(activeTimerInterval);
+          let timeLeft = 45; // urgency countdown
+          const el = document.getElementById(elementId);
+          const confidence = (95 + Math.random() * 4).toFixed(1);
+          
+          function render() {
+              el.innerHTML = `${mainText} <br/><span class="text-xs sm:text-sm text-gray-400 mt-2 inline-block bg-black/50 px-3 py-1 rounded border border-gray-800">Confianza: <span class="text-green-400">${confidence}%</span> <span class="mx-2">|</span> <i class="fas fa-clock mr-1"></i> <span class="text-red-500 font-bold">Expira en: ${timeLeft}s</span></span>`;
+          }
+          render();
+          
+          activeTimerInterval = setInterval(() => {
+              timeLeft--;
+              if(timeLeft <= 0) {
+                  clearInterval(activeTimerInterval);
+                  el.innerHTML = `<span class="text-red-500 font-bold border border-red-500 px-3 py-1 bg-red-900/20 rounded shadow-[0_0_10px_rgba(239,68,68,0.5)]">// SEÑAL EXPIRADA //</span><br/><span class="text-xs text-gray-500 mt-2 block">La ventana de vulnerabilidad se cerró.</span>`;
+              } else {
+                  render();
+              }
+          }, 1000);
+      }
+      
+      // DEPOSIT MODAL LOGIC
+      document.getElementById('closeDepositModalBtn').addEventListener('click', () => {
+          document.getElementById('depositModal').classList.add('hidden');
+          gameView.classList.add('hidden');
+          signalsSection.classList.remove('hidden');
+      });
+
+      document.getElementById('verifyDepositBtn').addEventListener('click', () => {
+          const txInput = document.getElementById('txIdInput').value;
+          const status = document.getElementById('depositStatus');
+          if(txInput !== '1337') {
+              status.textContent = "Error: Código de acceso inválido";
+              status.className = "text-red-500 font-mono text-sm mt-3 h-4";
+              return;
+          }
+          status.textContent = "Verificando código de acceso...";
+          status.className = "text-yellow-400 font-mono text-sm mt-3 h-4 animate-pulse";
+          setTimeout(() => {
+              status.textContent = "¡Sincronización de API Restaurada! Éxito.";
+              status.className = "text-green-500 font-mono text-sm mt-3 h-4";
+              globalSignalCount = 0;
+              localStorage.setItem('ai_global_signal_count', 0);
+              setTimeout(() => {
+                  document.getElementById('depositModal').classList.add('hidden');
+                  document.getElementById('txIdInput').value = '';
+                  status.textContent = '';
+              }, 1500);
+          }, 3000);
+      });
+
+      function executeWithAnalysis(btn, consoleOutput, callback) {
+          if (globalSignalCount >= MAX_FREE_SIGNALS) {
+              btn.disabled = false;
+              btn.classList.remove("btn-disabled");
+              document.getElementById('depositModal').classList.remove('hidden');
+              return;
+          }
+          globalSignalCount++;
+          localStorage.setItem('ai_global_signal_count', globalSignalCount);
+          
+          btn.disabled = true;
+          btn.classList.add("btn-disabled");
+          const outputDiv = consoleOutput.querySelector("div");
+          outputDiv.innerHTML = "";
+          
+          const overlay = document.getElementById('scanningOverlay');
+          const progressBar = document.getElementById('scanProgressBar');
+          const statusText = document.getElementById('scanStatus');
+          overlay.classList.remove('hidden');
+          progressBar.style.width = '0%';
+          
+          const steps = [
+              "Estableciendo túnel de puerto seguro...",
+              "Interceptando hashes del juego en vivo...",
+              "Aplicando lógica de red neuronal...",
+              "¡Señal descifrada con éxito!"
+          ];
+          
+          let progress = 0;
+          let stepIdx = 0;
+          let scanIntv = setInterval(() => {
+              progress += Math.random() * 15;
+              if(progress > 100) progress = 100;
+              progressBar.style.width = progress + '%';
+              
+              if(progress > 25 && stepIdx === 0) { statusText.innerText = steps[0]; stepIdx++; }
+              if(progress > 50 && stepIdx === 1) { statusText.innerText = steps[1]; stepIdx++; }
+              if(progress > 75 && stepIdx === 2) { statusText.innerText = steps[2]; stepIdx++; }
+              
+              if(progress === 100) {
+                  clearInterval(scanIntv);
+                  statusText.innerText = steps[3];
+                  statusText.classList.add('text-green-500');
+                  
+                  setTimeout(() => {
+                      overlay.classList.add('hidden');
+                      statusText.classList.remove('text-green-500');
+                      
+                      currentStreak++;
+                      localStorage.setItem('ai_current_streak', currentStreak);
+                      updateStreak();
+                      
+                      const p = document.createElement('p');
+                      p.textContent = `> ✅ ÉXITO: Vulnerabilidad explotada. Señal Adquirida.`;
+                      p.className = "text-green-500 font-bold drop-shadow-[0_0_5px_rgba(57,255,20,0.5)]";
+                      outputDiv.appendChild(p);
+                      
+                      callback();
+                  }, 800);
+              }
+          }, 100);
+      }
+
+      // AVIATOR
+      document.getElementById("aviator-get-signal-btn").addEventListener("click", function() {
+          if(this.disabled) return;
+          executeWithAnalysis(this, document.getElementById("aviator-console"), () => {
+              const target = (1.1 + Math.random() * 0.89).toFixed(2);
+              showSignalWithTimer("aviator-bet-suggestion", `Señal: Retirar en <span class="text-white text-2xl drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]">${target}x</span>`);
+              document.getElementById("aviator-multiplier").textContent = `x${target}`;
+              this.classList.add("hidden");
+              document.getElementById("aviator-get-another-btn").classList.remove("hidden");
+          });
+      });
+      document.getElementById("aviator-get-another-btn").addEventListener("click", function(){
+          this.classList.add("hidden");
+          const btn = document.getElementById("aviator-get-signal-btn");
+          btn.classList.remove("hidden");
+          btn.disabled = false;
+          btn.classList.remove("btn-disabled");
+          btn.click();
+      });
+
+      // MINES
+      document.getElementById("mines-get-signal-btn").addEventListener("click", function() {
+          if(this.disabled) return;
+          executeWithAnalysis(this, document.getElementById("mines-console"), () => {
+              const container = document.getElementById("mines-grid-container");
+              container.innerHTML = "";
+              container.className = "grid grid-cols-5 gap-2 w-full max-w-md aspect-square mb-6";
+              const safe = [];
+              while(safe.length < 5) {
+                  let r = Math.floor(Math.random()*25);
+                  if(!safe.includes(r)) safe.push(r);
+              }
+              for(let i=0; i<25; i++) {
+                  const cell = document.createElement("div");
+                  cell.className = "mine-cell flex items-center justify-center " + (safe.includes(i) ? "safe" : "");
+                  container.appendChild(cell);
+              }
+              showSignalWithTimer("mines-bet-suggestion", `Señal de IA: <span class="text-white">5 Celdas Seguras Reveladas</span>`);
+              this.classList.add("hidden");
+              document.getElementById("mines-get-another-btn").classList.remove("hidden");
+          });
+      });
+      document.getElementById("mines-get-another-btn").addEventListener("click", function(){
+          this.classList.add("hidden");
+          const btn = document.getElementById("mines-get-signal-btn");
+          btn.classList.remove("hidden");
+          btn.disabled = false;
+          btn.classList.remove("btn-disabled");
+          btn.click();
+      });
+
+      // PENALTY
+      document.getElementById("penalty-get-signal-btn").addEventListener("click", function() {
+          if(this.disabled) return;
+          executeWithAnalysis(this, document.getElementById("penalty-console"), () => {
+              document.querySelectorAll(".penalty-target-zone").forEach(z => z.classList.remove("highlight", "scale-110"));
+              const r = Math.floor(Math.random()*5)+1;
+              const z = document.querySelector(`[data-zone="${r}"]`);
+              if(z) z.classList.add("highlight", "scale-110");
+              showSignalWithTimer("penalty-bet-suggestion", `Señal de IA: Zona Objetivo <span class="text-white text-xl">${r}</span>`);
+              this.classList.add("hidden");
+              document.getElementById("penalty-start-new-game-btn").classList.remove("hidden");
+          });
+      });
+      document.getElementById("penalty-start-new-game-btn").addEventListener('click', function(){
+          this.classList.add("hidden");
+          const btn = document.getElementById("penalty-get-signal-btn");
+          btn.classList.remove("hidden");
+          btn.disabled = false;
+          btn.classList.remove("btn-disabled");
+          btn.click();
+      });
+
+      // APPLE
+      document.getElementById("apple-get-signal-btn").addEventListener("click", function() {
+          if(this.disabled) return;
+          executeWithAnalysis(this, document.getElementById("apple-console"), () => {
+              const r = Math.floor(Math.random()*5)+1;
+              const d = document.getElementById("apple-signal-display");
+              d.textContent = r;
+              d.classList.add("text-green-500", "shadow-lg");
+              showSignalWithTimer("apple-bet-suggestion", `Seleccionar columna <span class="text-white text-xl">${r}</span>`);
+              this.classList.add("hidden");
+              document.getElementById("apple-start-new-game-btn").classList.remove("hidden");
+          });
+      });
+      document.getElementById("apple-start-new-game-btn").addEventListener('click', function(){
+          this.classList.add("hidden");
+          const btn = document.getElementById("apple-get-signal-btn");
+          btn.classList.remove("hidden");
+          btn.disabled = false;
+          btn.classList.remove("btn-disabled");
+          btn.click();
+      });
+
+      // CHICKEN
+      document.getElementById("chicken-get-signal-btn").addEventListener("click", function() {
+          if(this.disabled) return;
+          executeWithAnalysis(this, document.getElementById("chicken-console"), () => {
+              const count = Math.floor(Math.random()*8)+1;
+              showSignalWithTimer("chicken-bet-suggestion", `Señal de IA: Elige con seguridad <span class="text-white text-xl">${count}</span> veces`);
+              this.classList.add("hidden");
+              document.getElementById("chicken-get-another-btn").classList.remove("hidden");
+          });
+      });
+      document.getElementById("chicken-get-another-btn").addEventListener('click', function(){
+          this.classList.add("hidden");
+          const btn = document.getElementById("chicken-get-signal-btn");
+          btn.classList.remove("hidden");
+          btn.disabled = false;
+          btn.classList.remove("btn-disabled");
+          btn.click();
+      });
+
+      // Navigation
+      document.getElementById("openModalBtn").addEventListener("click", () => {
+         document.getElementById('accessModal').classList.remove('hidden'); 
+      });
+      document.getElementById("validateBtn").addEventListener("click", () => {
+          if(document.getElementById("accessCode").value === "2282" || document.getElementById("accessCode").value === "admin2282") {
+              document.getElementById('formContent').classList.add('hidden');
+              document.getElementById('statusContent').classList.remove('hidden');
+              document.getElementById('statusText').textContent = "Acceso Concedido";
+              setTimeout(() => {
+                  document.getElementById('accessModal').classList.add('hidden');
+                  mainContent.classList.add('hidden');
+                  appContainer.classList.remove('hidden');
+              }, 1000);
+          } else {
+              document.getElementById("errorMessage").textContent = "Código inválido";
+          }
+      });
+      
+      document.querySelectorAll(".activate-btn").forEach(btn => {
+         btn.addEventListener("click", e => {
+             const g = e.target.closest('.signal-card').dataset.game;
+             signalsSection.classList.add('hidden');
+             gameView.classList.remove('hidden');
+             document.querySelectorAll('.game-screen').forEach(s => s.classList.add('hidden'));
+             document.getElementById('game-screen-'+g).classList.remove('hidden');
+         });
+      });
+      
+      document.querySelectorAll('.back-to-signals-btn').forEach(btn => {
+         btn.addEventListener('click', () => {
+             gameView.classList.add('hidden');
+             signalsSection.classList.remove('hidden');
+         });
+      });
+      
+      // Fill winners feed
+      setInterval(() => {
+         const d = document.createElement('div');
+         d.className = "flex-shrink-0 flex items-center space-x-3 bg-gray-900/50 p-2 rounded-md w-48 mx-2 text-xs font-bold";
+         d.innerHTML = `<span class="text-gray-200">Usuario${Math.floor(Math.random()*9000)+1000}</span> <span class="text-lime-300">$${Math.floor(Math.random()*5000)+100}</span>`;
+         const feed = document.getElementById('live-feed-container');
+         feed.prepend(d);
+         if(feed.children.length > 5) feed.lastChild.remove();
+      }, 3000);
+    </script>
+  </body>
+</html>
